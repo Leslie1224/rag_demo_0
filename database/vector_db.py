@@ -2,6 +2,7 @@ import faiss
 from data_processing.embedding_generator import model, vectorize_chunks
 from data_processing.document_loader import *
 from data_processing.text_splitter import *
+from calculate_time import *
 
 # 创建 HNSW 索引
 def create_hnsw_index(doc_vectors, M=16, efConstruction=200):
@@ -28,6 +29,9 @@ def load_index_and_chunks(index_path="faiss_index.bin", chunks_path="chunks.txt"
 # 检索相似分块
 def search_related_chunks(query, index, chunks, k=3, efSearch=100, similarity_threshold=0.00):
     query_vector = model.encode([query], convert_to_numpy=True).astype('float32')  # 使用全局的 model
+        
+    # 归一化查询向量
+    faiss.normalize_L2(query_vector)
     
     # 设置搜索参数
     index.hnsw.efSearch = efSearch
@@ -35,8 +39,8 @@ def search_related_chunks(query, index, chunks, k=3, efSearch=100, similarity_th
     # 检索
     distances, indices = index.search(query_vector, k)  # 先检索前 k 个结果
     
-    # 将距离转换为相似度（Faiss 返回的是 L2 距离，越小表示越相似）
-    similarities = 1 / (1 + distances)  # 将距离转换为相似度
+    # 将内积距离转换为余弦相似度（Faiss 返回的是内积，越大表示越相似）
+    similarities = (1 + distances) / 2  # 将内积归一化到 [0, 1] 范围
     
     # 筛选满足相似度阈值的结果
     filtered_results = []
@@ -53,8 +57,13 @@ def search_related_chunks(query, index, chunks, k=3, efSearch=100, similarity_th
 
 # 主函数：构建 HNSW 数据库
 def build_hnsw_database(file_path, chunk_strategy="recursive", max_chunk_size=100):
+
+    startTime = record_timestamp()
     # 读取文档
     content = read_documents(file_path)
+    endTime = record_timestamp()
+    read_documents_time = calculate_duration(startTime, endTime)
+    print("文档读取时间:", read_documents_time)
     print("文档读取完成")
     
     # 分块知识库

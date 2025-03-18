@@ -4,6 +4,8 @@ from data_processing.text_splitter import *
 from database.vector_db import *
 from llm.model_provider import *
 from llm.prompt_engineer import *
+from calculate_time import *
+
 
 if __name__ == "__main__":
     # 构建 HNSW 数据库
