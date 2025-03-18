@@ -39,6 +39,24 @@ retriever_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 耗时测试：
 
 
+文档读取时间: 0.3195 ms
+
+知识库分块时间: 1.4553 ms
+
+
+分块向量化时间:  920.4535 ms
+
+
+创建 HNSW 索引时间:  44.4729 ms
+
+第一次LLM回答时间: 5718.5619 ms    4674.2857 ms    3630.1141 ms
+
+向量检索时间:  29.9678 ms
+
+第二次LLM回答时间: 3117.038488 ms    3456.7323 ms     2854.8317 ms
+
+可以看到主要时间开销在两次LLM回答问题处，LLM输出token为主要的瓶颈，每次回答问题耗时在 2.5~6.0 s 区间。
+
 
 
 embedding好的模型，各方面的优势（参数：维度有影响吗？），分块策略做实验（recrusive），索引类型，rerank模型(调研下现在有哪些，效果如何)

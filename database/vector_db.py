@@ -66,16 +66,28 @@ def build_hnsw_database(file_path, chunk_strategy="recursive", max_chunk_size=10
     print("文档读取时间:", read_documents_time)
     print("文档读取完成")
     
+    startTime = record_timestamp()
     # 分块知识库
     chunks = chunk_knowledge_base(content, chunk_strategy, max_chunk_size)
+    endTime = record_timestamp()
+    chunk_knowledge_time = calculate_duration(startTime, endTime)
+    print("知识库分块时间:", chunk_knowledge_time)
     print(f"知识库分块完成，共生成 {len(chunks)} 个分块")
     
+    startTime = record_timestamp()
     # 向量化分块
     chunk_vectors = vectorize_chunks(chunks)
+    endTime = record_timestamp()
+    vectorize_time = calculate_duration(startTime, endTime)
+    print("分块向量化时间:", vectorize_time)
     print("分块向量化完成")
     
+    startTime = record_timestamp()
     # 创建并保存 HNSW 索引
     index = create_hnsw_index(chunk_vectors)
+    endTime = record_timestamp()
+    create_hnsw_index_time = calculate_duration(startTime, endTime)
+    print("创建 HNSW 索引时间:", create_hnsw_index_time)
     save_index_and_chunks(index, chunks)
     print("HNSW 数据库已创建并保存")
     return index, chunks
