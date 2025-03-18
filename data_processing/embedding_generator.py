@@ -1,8 +1,7 @@
-
 import os
 
 # 设置 Hugging Face 的镜像站点
-os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+# os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 from sentence_transformers import SentenceTransformer
 
 # model_path = "./stsb/models"  # Hugging Face 模型名称
