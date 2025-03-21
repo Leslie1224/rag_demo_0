@@ -7,8 +7,10 @@ from calculate_time import *
 # 创建 HNSW 索引
 def create_hnsw_index(doc_vectors, M=16, efConstruction=200):
     d = doc_vectors.shape[1]  # 向量维度
+    faiss.normalize_L2(doc_vectors)  # 归一化向量
     index = faiss.IndexHNSWFlat(d, M)  # 使用 HNSW 索引
     index.hnsw.efConstruction = efConstruction  # 设置构建参数
+    index.metric_type = faiss.METRIC_INNER_PRODUCT  # 设置度量方式为内积
     index.add(doc_vectors)  # 添加向量到索引
     return index
 
