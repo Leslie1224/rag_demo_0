@@ -1,5 +1,6 @@
 import faiss
-from data_processing.embedding_generator import model, vectorize_chunks
+# from data_processing.ollama_embedding import vectorize_chunks
+from data_processing.embedding_generator import vectorize_chunks
 from data_processing.document_loader import *
 from data_processing.text_splitter import *
 from calculate_time import *
@@ -28,8 +29,12 @@ def load_index_and_chunks(index_path="faiss_index.bin", chunks_path="chunks.txt"
 
 # 检索相似分块
 def search_related_chunks(query, index, chunks, k=3, efSearch=100, similarity_threshold=0.00):
-    query_vector = model.encode([query], convert_to_numpy=True).astype('float32')  # 使用全局的 model
-        
+    # query_vector = model.encode([query], convert_to_numpy=True).astype('float32')  # 使用全局的 model
+    query_vector = vectorize_chunks([query])
+    # chunk_vectors = model.encode(chunks, convert_to_numpy=True).astype('float32')
+
+    # query_vector = vectorize_chunks(chunks,embed_model="nomic-embed-text", host="http://2.ndsl:11434")
+
     # 归一化查询向量
     faiss.normalize_L2(query_vector)
     
@@ -41,7 +46,7 @@ def search_related_chunks(query, index, chunks, k=3, efSearch=100, similarity_th
     
     # 将内积距离转换为余弦相似度（Faiss 返回的是内积，越大表示越相似）
     similarities = (1 + distances) / 2  # 将内积归一化到 [0, 1] 范围
-    
+    print(similarities)
     # 筛选满足相似度阈值的结果
     filtered_results = []
     for i in range(len(indices[0])):
@@ -56,7 +61,7 @@ def search_related_chunks(query, index, chunks, k=3, efSearch=100, similarity_th
     return filtered_results
 
 # 主函数：构建 HNSW 数据库
-def build_hnsw_database(file_path, chunk_strategy="recursive", max_chunk_size=100):
+def build_hnsw_database(file_path, chunk_strategy="recursive", max_chunk_size=500):
 
     startTime = record_timestamp()
     # 读取文档
@@ -72,6 +77,8 @@ def build_hnsw_database(file_path, chunk_strategy="recursive", max_chunk_size=10
     
     # 向量化分块
     chunk_vectors = vectorize_chunks(chunks)
+    # chunk_vectors = vectorize_chunks(chunks,embed_model="nomic-embed-text", host="http://2.ndsl:11434")
+
     print("分块向量化完成")
     
     # 创建并保存 HNSW 索引
@@ -81,7 +88,7 @@ def build_hnsw_database(file_path, chunk_strategy="recursive", max_chunk_size=10
     return index, chunks
 
 # 主函数：加载 HNSW 数据库并检索相关文档
-def search_in_hnsw_database(query, k=2):
+def search_in_hnsw_database(query, k=3):
     # 加载 HNSW 索引
     index, chunks = load_index_and_chunks()
     # 检索相关文档

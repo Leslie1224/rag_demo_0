@@ -1,3 +1,4 @@
+
 问题：
 
 1、关键词检索不出来？（分块策略：递归分块/语义分块方法？和距离查找方法—距离种类和距离归一化的方法？）
@@ -39,6 +40,24 @@ retriever_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 耗时测试：
 
 
+文档读取时间: 0.3195 ms
+
+知识库分块时间: 1.4553 ms
+
+
+分块向量化时间:  920.4535 ms
+
+
+创建 HNSW 索引时间:  44.4729 ms
+
+第一次LLM回答时间: 5718.5619 ms    4674.2857 ms    3630.1141 ms
+
+向量检索时间:  29.9678 ms
+
+第二次LLM回答时间: 3117.038488 ms    3456.7323 ms     2854.8317 ms
+
+可以看到主要时间开销在两次LLM回答问题处，LLM输出token为主要的瓶颈，每次回答问题耗时在 2.5~6.0 s 区间。
+
 
 
 embedding好的模型，各方面的优势（参数：维度有影响吗？），分块策略做实验（recrusive），索引类型，rerank模型(调研下现在有哪些，效果如何)
@@ -56,11 +75,3 @@ CUDA_VISIBLE_DEVICES=2 ollama run qwen:14b 直接指定该模型运行的gpu，�
 在启动ollama服务的时候就指定： $ CUDA_VISIBLE_DEVICES=2 ollama serve
 
 则该服务会与运行在gpu2上，否则python程序和大模型都是用gpu0，程序很可能因为gpu0显存不足而崩溃
-
-
-batch_size=32  # 启用批量优化
-
-    
-印方代表：在我们印度宗教文化里，锡金段这片区域被视为湿婆神赐福之地，对印度教徒精神世界意义重大，所以边界应重新界定。印方代表：可从印度教传统来看，这关系到众多信徒的信仰情感与精神寄托，希望中方予以考虑。印方代表：难道不能就宗教层面的特殊意义，对边界有新考量，找到折中的办法？
-
-<|en|><|NEUTRAL|><|Speech|><|withitn|>In our Indian religious and cultural traditions, the area in the S sector is regarded as a land blessed by Lord Shiva and holds great significance for the spiritual world of Hindus.<|en|><|NEUTRAL|><|Speech|><|withitn|>The area in the S sector is regarded as a land blessed by Lord Shiva and holds great significance for the spiritual world of Hindus; therefore the boundary here should be redefined.<|en|><|HAPPY|><|Speech|><|withitn|>尊重历史与国际法 about the boundary in light of the special significance at the religious level and find a compromised solution.

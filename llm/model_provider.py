@@ -25,10 +25,10 @@ def send_request_to_llm(url, headers, data):
                 print(f"无法解析行: {line}")
 
 
-        print("-" * 50)  # 分隔线 
+        # print("-" * 50)  # 分隔线 
         # 打印拼接后的完整内容
         print(combined_response)
-        print("-" * 50)  # 分隔线
+        # print("-" * 50)  # 分隔线
         return combined_response
 
     except requests.exceptions.HTTPError as http_err:

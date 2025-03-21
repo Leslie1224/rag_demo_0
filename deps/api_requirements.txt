@@ -1,0 +1,8 @@
+faiss_gpu==1.7.2
+numpy==1.26.4
+Requests==2.32.3
+sentence_transformers==3.4.1
+spacy==3.8.4
+torch==2.6.0
+fastapi==
+uvicorn==0.34.0

@@ -1,15 +1,15 @@
 from data_processing.document_loader import *
-from data_processing.embedding_generator import *
 from data_processing.text_splitter import *
 from database.vector_db import *
 from llm.model_provider import *
 from llm.prompt_engineer import *
+# from llm.prompt_engineer_openai import *
 from calculate_time import *
 
 
 if __name__ == "__main__":
     # 构建 HNSW 数据库
-    index, chunks = build_hnsw_database("./RAGBase.txt", chunk_strategy="recursive", max_chunk_size=100)
+    index, chunks = build_hnsw_database("./RAGBase.txt", chunk_strategy="recursive", max_chunk_size=500)
     
     # 进入查询循环
     while True:
@@ -20,8 +20,9 @@ if __name__ == "__main__":
         if query1 == "exit":
             print("程序已退出。")
             break
-        
+        print("总结"+"-" * 50)  # 分隔线       
         result = send_query_to_llm_1(query=query1)
+        print("-" * 50)  # 分隔线       
 
         # 检索相关文档
         related_docs = search_related_chunks(result, index, chunks, k=3)
