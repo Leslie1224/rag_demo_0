@@ -3,6 +3,10 @@ from data_processing.embedding_generator import model, vectorize_chunks
 from data_processing.document_loader import *
 from data_processing.text_splitter import *
 from calculate_time import *
+import numpy as np
+import pickle
+import os
+from pathlib import Path
 
 # 创建 HNSW 索引
 def create_hnsw_index(doc_vectors, M=16, efConstruction=200):
@@ -15,14 +19,32 @@ def create_hnsw_index(doc_vectors, M=16, efConstruction=200):
     return index
 
 # 保存索引和分块
-def save_index_and_chunks(index, chunks, index_path="faiss_index.bin", chunks_path="chunks.txt"):
+def save_index_and_chunks(index, chunks, index_path="./data/faiss_index.bin", chunks_path="./data/chunks.txt"):
     faiss.write_index(index, index_path)
     with open(chunks_path, "w", encoding="utf-8") as f:
         for chunk in chunks:
             f.write(chunk + "\n")
 
+# 将向量数组保存到文件，支持多种格式。
+def save_vectors(vectors, file_path = "./data/RAGBase_vector"):
+    np.save(file_path + '.npy', vectors)
+    print(f"向量已保存到 {file_path}.npy")
+
+# 从文件中加载向量数组。
+def load_vectors(file_path = "./data/RAGBase_vector.npy"):
+    return np.load(file_path)
+
+# 检查指定的向量文件是否存在
+def check_vector_file_exists() -> bool:
+    files_to_check = [
+        Path("./data/RAGBase_vector.npy"),
+        Path("./data/faiss_index.bin"),
+        Path("./data/chunks.txt")
+    ]
+    return all(file.is_file() for file in files_to_check)
+
 # 加载索引和分块
-def load_index_and_chunks(index_path="faiss_index.bin", chunks_path="chunks.txt"):
+def load_index_and_chunks(index_path="./data/faiss_index.bin", chunks_path="./data/chunks.txt"):
     index = faiss.read_index(index_path)
     with open(chunks_path, "r", encoding="utf-8") as f:
         chunks = [line.strip() for line in f if line.strip()]
@@ -43,7 +65,8 @@ def search_related_chunks(query, index, chunks, k=3, efSearch=100, similarity_th
     
     # 将内积距离转换为余弦相似度（Faiss 返回的是内积，越大表示越相似）
     similarities = (1 + distances) / 2  # 将内积归一化到 [0, 1] 范围
-    
+    # similarities = distances
+
     # 筛选满足相似度阈值的结果
     filtered_results = []
     for i in range(len(indices[0])):
@@ -68,30 +91,52 @@ def build_hnsw_database(file_path, chunk_strategy="recursive", max_chunk_size=10
     print("文档读取时间:", read_documents_time)
     print("文档读取完成")
     
-    startTime = record_timestamp()
-    # 分块知识库
-    chunks = chunk_knowledge_base(content, chunk_strategy, max_chunk_size)
-    endTime = record_timestamp()
-    chunk_knowledge_time = calculate_duration(startTime, endTime)
-    print("知识库分块时间:", chunk_knowledge_time)
-    print(f"知识库分块完成，共生成 {len(chunks)} 个分块")
+    if check_vector_file_exists():
+        print("已存储向量化后的数据，直接读取")
+
+        startTime = record_timestamp()
+        index, chunks = load_index_and_chunks()
+        endTime = record_timestamp()
+        read_chunk_knowledge_time = calculate_duration(startTime, endTime)
+        print("读取index, chunks时间:", read_chunk_knowledge_time)
+
+        startTime = record_timestamp()
+        chunk_vectors = load_vectors()
+        endTime = record_timestamp()
+        read_vectors_time = calculate_duration(startTime, endTime)
+        print("读取vectors时间:", read_vectors_time)
+        save_index_and_chunks(index, chunks)
+        save_vectors(chunk_vectors)
+        
+    else:
+        print("尚未存储向量化后的数据，直接读取")
+        
+        startTime = record_timestamp()
+        # 分块知识库
+        chunks = chunk_knowledge_base(content, chunk_strategy, max_chunk_size)
+        endTime = record_timestamp()
+        chunk_knowledge_time = calculate_duration(startTime, endTime)
+        print("知识库分块时间:", chunk_knowledge_time)
+        print(f"知识库分块完成，共生成 {len(chunks)} 个分块")
+        
+        startTime = record_timestamp()
+        # 向量化分块
+        chunk_vectors = vectorize_chunks(chunks)
+        endTime = record_timestamp()
+        vectorize_time = calculate_duration(startTime, endTime)
+        print("分块向量化时间:", vectorize_time)
+        print("分块向量化完成")
     
-    startTime = record_timestamp()
-    # 向量化分块
-    chunk_vectors = vectorize_chunks(chunks)
-    endTime = record_timestamp()
-    vectorize_time = calculate_duration(startTime, endTime)
-    print("分块向量化时间:", vectorize_time)
-    print("分块向量化完成")
+        startTime = record_timestamp()
+        # 创建并保存 HNSW 索引
+        index = create_hnsw_index(chunk_vectors)
+        endTime = record_timestamp()
+        create_hnsw_index_time = calculate_duration(startTime, endTime)
+        print("创建 HNSW 索引时间:", create_hnsw_index_time)
+        save_index_and_chunks(index, chunks)
+        save_vectors(chunk_vectors)
+        print("HNSW 数据库已创建并保存")
     
-    startTime = record_timestamp()
-    # 创建并保存 HNSW 索引
-    index = create_hnsw_index(chunk_vectors)
-    endTime = record_timestamp()
-    create_hnsw_index_time = calculate_duration(startTime, endTime)
-    print("创建 HNSW 索引时间:", create_hnsw_index_time)
-    save_index_and_chunks(index, chunks)
-    print("HNSW 数据库已创建并保存")
     return index, chunks
 
 # 主函数：加载 HNSW 数据库并检索相关文档
